@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'pages/login_page.dart';
 void main() {
   runApp(const MyApp());
 }
@@ -12,7 +12,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Aplikasi Bansos',
-      home: const HomePage(),
+      home: const LoginPage(),
     );
   }
 }
