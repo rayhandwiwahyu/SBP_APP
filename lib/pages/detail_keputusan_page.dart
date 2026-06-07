@@ -56,129 +56,122 @@ class DetailKeputusanPage extends StatelessWidget {
   }
 
   Widget _buildVerdictCard() {
-    final persen = (hasil.cfGabungan * 100).toStringAsFixed(0);
-    final cf = hasil.cfGabungan.toStringAsFixed(2);
+  final persen = (hasil.cfGabungan * 100).toStringAsFixed(0);
+  final cf     = hasil.cfGabungan.toStringAsFixed(2);
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: hasil.layak ? successGreen : dangerRed,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Text(
-              hasil.layak
-                  ? 'LAYAK MENERIMA BANSOS'
-                  : 'TIDAK LAYAK MENERIMA BANSOS',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '$persen%',
-            style: const TextStyle(
-              fontSize: 52,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-          ),
-          const Text(
-            'KEYAKINAN SISTEM',
-            style: TextStyle(color: Colors.grey, fontSize: 11),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.verified_outlined, size: 14, color: Colors.grey),
-              const SizedBox(width: 4),
-              Text(
-                'Certainty Factor: $cf',
-                style: const TextStyle(color: Colors.grey, fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 12),
-          const Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'PROBABILITAS JENIS BANTUAN',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _buildProbabilityBar(
-            'Bansos Sembako',
-            hasil.cfSembako,
-            primaryBlue,
-          ),
-          const SizedBox(height: 8),
-          _buildProbabilityBar(
-            'Bansos Uang Tunai (PKH)',
-            hasil.cfPKH,
-            const Color(0xFF00695C),
-          ),
-        ],
-      ),
-    );
-  }
+  // Warna berdasarkan jenis bansos
+  final Map<JenisBansos, Color> warnaBansos = {
+    JenisBansos.pkh:           const Color(0xFF1565C0),
+    JenisBansos.bpnt:          const Color(0xFF2E7D32),
+    JenisBansos.pip:           const Color(0xFF6A1B9A),
+    JenisBansos.blt:           const Color(0xFFE65100),
+    JenisBansos.bantuanDaerah: const Color(0xFF00695C),
+    JenisBansos.tidakLayak:    const Color(0xFFC62828),
+  };
 
-  Widget _buildProbabilityBar(String label, double value, Color color) {
-    return Column(
+  final Color warnaTerpilih = warnaBansos[hasil.rekomendasiUtama] ?? dangerRed;
+
+  return Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
+    ),
+    child: Column(
       children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: warnaTerpilih,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Text(
+            hasil.layak ? hasil.namaRekomendasi.toUpperCase() : 'TIDAK LAYAK MENERIMA BANSOS',
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 0.5),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          '$persen%',
+          style: const TextStyle(fontSize: 52, fontWeight: FontWeight.bold, color: Colors.black87),
+        ),
+        const Text('KEYAKINAN SISTEM', style: TextStyle(color: Colors.grey, fontSize: 11)),
+        const SizedBox(height: 8),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label, style: const TextStyle(fontSize: 12, color: Colors.black87)),
-            Text(
-              '${(value * 100).toStringAsFixed(0)}%',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
+            const Icon(Icons.verified_outlined, size: 14, color: Colors.grey),
+            const SizedBox(width: 4),
+            Text('Certainty Factor: $cf', style: const TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
-        const SizedBox(height: 4),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: value,
-            minHeight: 6,
-            backgroundColor: const Color(0xFFE0E0E0),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+        const SizedBox(height: 16),
+        const Divider(),
+        const SizedBox(height: 12),
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'NILAI CF PER JENIS BANSOS',
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.8),
           ),
         ),
+        const SizedBox(height: 10),
+        _buildProbabilityBar('PKH', hasil.cfPKH, const Color(0xFF1565C0), hasil.rekomendasiUtama == JenisBansos.pkh),
+        const SizedBox(height: 8),
+        _buildProbabilityBar('BPNT / Sembako', hasil.cfBPNT, const Color(0xFF2E7D32), hasil.rekomendasiUtama == JenisBansos.bpnt),
+        const SizedBox(height: 8),
+        _buildProbabilityBar('PIP', hasil.cfPIP, const Color(0xFF6A1B9A), hasil.rekomendasiUtama == JenisBansos.pip),
+        const SizedBox(height: 8),
+        _buildProbabilityBar('BLT', hasil.cfBLT, const Color(0xFFE65100), hasil.rekomendasiUtama == JenisBansos.blt),
+        const SizedBox(height: 8),
+        _buildProbabilityBar('Bantuan Daerah', hasil.cfBantuanDaerah, const Color(0xFF00695C), hasil.rekomendasiUtama == JenisBansos.bantuanDaerah),
       ],
-    );
-  }
+    ),
+  );
+}
+
+  Widget _buildProbabilityBar(String label, double value, Color color, bool isSelected) {
+  return Column(
+    children: [
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              if (isSelected)
+                Container(
+                  margin: const EdgeInsets.only(right: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text('✓', style: TextStyle(color: Colors.white, fontSize: 10)),
+                ),
+              Text(label, style: TextStyle(fontSize: 12, color: Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            ],
+          ),
+          Text(
+            '${(value * 100).toStringAsFixed(0)}%',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: LinearProgressIndicator(
+          value: value,
+          minHeight: isSelected ? 8 : 6,
+          backgroundColor: const Color(0xFFE0E0E0),
+          valueColor: AlwaysStoppedAnimation<Color>(color),
+        ),
+      ),
+    ],
+  );
+}
 
   Widget _buildDataPenerima() {
     return Container(
@@ -365,12 +358,17 @@ class DetailKeputusanPage extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: hasil.layak
-              ? [const Color(0xFF1565C0), const Color(0xFF1E88E5)]
-              : [const Color(0xFF8B0000), const Color(0xFFC62828)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+  colors: {
+    JenisBansos.pkh:           [const Color(0xFF1565C0), const Color(0xFF1E88E5)],
+    JenisBansos.bpnt:          [const Color(0xFF2E7D32), const Color(0xFF43A047)],
+    JenisBansos.pip:           [const Color(0xFF6A1B9A), const Color(0xFF9C27B0)],
+    JenisBansos.blt:           [const Color(0xFFE65100), const Color(0xFFFF7043)],
+    JenisBansos.bantuanDaerah: [const Color(0xFF004D40), const Color(0xFF00695C)],
+    JenisBansos.tidakLayak:    [const Color(0xFF8B0000), const Color(0xFFC62828)],
+  }[hasil.rekomendasiUtama] ?? [const Color(0xFF8B0000), const Color(0xFFC62828)],
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Column(
@@ -398,7 +396,7 @@ class DetailKeputusanPage extends StatelessWidget {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              hasil.rekomendasiUtama,
+              hasil.namaRekomendasi,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -409,7 +407,7 @@ class DetailKeputusanPage extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             hasil.layak
-                ? 'Berdasarkan hasil analisis sistem pakar dengan metode Certainty Factor, warga ini direkomendasikan menerima ${hasil.rekomendasiUtama} dengan tingkat keyakinan ${(hasil.cfGabungan * 100).toStringAsFixed(0)}%.'
+                ? 'Berdasarkan hasil analisis sistem pakar dengan metode Certainty Factor, warga ini direkomendasikan menerima ${hasil.namaRekomendasi} dengan tingkat keyakinan ${(hasil.cfGabungan * 100).toStringAsFixed(0)}%.'
                 : 'Berdasarkan hasil analisis, warga ini belum memenuhi kriteria kelayakan penerima bantuan sosial. Tingkat keyakinan sistem: ${(hasil.cfGabungan * 100).toStringAsFixed(0)}%.',
             style: TextStyle(
               fontSize: 12,

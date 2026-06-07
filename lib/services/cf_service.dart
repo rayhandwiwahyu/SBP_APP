@@ -1,22 +1,33 @@
 import '../models/warga_model.dart';
 
+// ── Enum jenis bansos ────────────────────────────────────────────────
+enum JenisBansos { pkh, bpnt, pip, blt, bantuanDaerah, tidakLayak }
+
 class HasilAnalisis {
-  final double cfSembako;
   final double cfPKH;
+  final double cfBPNT;
+  final double cfPIP;
+  final double cfBLT;
+  final double cfBantuanDaerah;
   final double cfGabungan;
   final bool layak;
   final bool blacklisted;
-  final String rekomendasiUtama;
+  final JenisBansos rekomendasiUtama;
+  final String namaRekomendasi;
   final List<String> alasanLayak;
   final List<DetailFaktor> detailFaktor;
 
   HasilAnalisis({
-    required this.cfSembako,
     required this.cfPKH,
+    required this.cfBPNT,
+    required this.cfPIP,
+    required this.cfBLT,
+    required this.cfBantuanDaerah,
     required this.cfGabungan,
     required this.layak,
     required this.blacklisted,
     required this.rekomendasiUtama,
+    required this.namaRekomendasi,
     required this.alasanLayak,
     required this.detailFaktor,
   });
@@ -39,53 +50,51 @@ class DetailFaktor {
 }
 
 class CFService {
-  // ── CF PAKAR — Sembako (dari kuesioner pakar) ─────────────────────
-  // Pendapatan
-  static const double cfPendapatanSangatRendah = 1.0;  // < 500rb   → skala 6
-  static const double cfPendapatanRendah       = 1.0;  // 500rb-1,5jt → skala 6
-  static const double cfPendapatanMenengah     = 1.0;  // 1,5jt-2,5jt → skala 6
-  static const double cfPendapatanTinggi       = -1.0; // > 2,5jt   → skala 6 (negatif)
+  // ── CF Pakar — Pendapatan ─────────────────────────────────────────
+  static const double cfPendapatanSangatRendah = 1.0; // < 500rb
+  static const double cfPendapatanRendah       = 1.0; // 500rb–1,5jt
+  static const double cfPendapatanMenengah     = 1.0; // 1,5jt–2,5jt
 
-  // Tanggungan
-  static const double cfTanggunganBanyak       = 0.8;  // > 4 orang  → skala 5
-  static const double cfTanggunganSedang       = 1.0;  // 3–4 orang  → skala 6
-  static const double cfTanggunganSedikit      = 0.6;  // 1–2 orang  → skala 4
+  // ── CF Pakar — Tanggungan ─────────────────────────────────────────
+  static const double cfTanggunganBanyak  = 0.8; // > 4 orang
+  static const double cfTanggunganSedang  = 1.0; // 3–4 orang
+  static const double cfTanggunganSedikit = 0.6; // 1–2 orang
 
-  // Kondisi Rumah
-  static const double cfRumahGubuk             = 1.0;  // Gubuk      → skala 6
-  static const double cfRumahTidakPermanen     = 0.8;  // Tdk permanen → skala 5
-  static const double cfRumahSemiPermanen      = 0.6;  // Semi       → skala 4
+  // ── CF Pakar — Kondisi Rumah ──────────────────────────────────────
+  static const double cfRumahGubuk         = 1.0;
+  static const double cfRumahTidakPermanen = 0.8;
+  static const double cfRumahSemiPermanen  = 0.6;
 
-  // Lahan
-  static const double cfTidakPunyaLahan        = 1.0;  // Numpang    → skala 6
-  static const double cfPunyaLahan             = -0.4; // Milik sdr  → skala 3 (negatif)
+  // ── CF Pakar — Lahan ─────────────────────────────────────────────
+  static const double cfTidakPunyaLahan = 1.0;
+  static const double cfPunyaLahan      = -0.4;
 
-  // Aset
-  static const double cfTidakPunyaAset         = 0.8;  // Tdk ada aset → skala 5
-  static const double cfPunyaTernak            = -0.6; // Punya ternak → skala 4 (negatif)
-  static const double cfPunyaTabunganEmas      = -0.4; // Tabungan/emas → skala 3 (negatif)
-  static const double cfPunyaKeduanya          = -0.2; // Ternak+tabungan → skala 2 (negatif)
-  static const double cfPunyaKendaraanLebihSatu = -0.6; // dari wawancara pakar
+  // ── CF Pakar — Aset ──────────────────────────────────────────────
+  static const double cfTidakPunyaAset          = 0.8;
+  static const double cfPunyaTernak             = -0.6;
+  static const double cfPunyaTabunganEmas       = -0.4;
+  static const double cfPunyaKeduanya           = -0.2;
+  static const double cfPunyaKendaraanLebihSatu = -0.6;
 
-  // ── CF PAKAR — PKH ────────────────────────────────────────────────
-  static const double cfDisabilitas            = 1.0;  // skala 6
-  static const double cfLansia                 = 0.8;  // skala 5
-  static const double cfDisabilitasLansia      = 1.0;  // skala 6
-  static const double cfIbuHamil               = 0.8;  // skala 5
-  static const double cfBalita                 = 0.6;  // skala 4
-  static const double cfAnakSekolah            = 0.2;  // skala 2
+  // ── CF Pakar — Kondisi Khusus ─────────────────────────────────────
+  static const double cfDisabilitas       = 1.0;
+  static const double cfLansia            = 0.8;
+  static const double cfDisabilitasLansia = 1.0;
+  static const double cfIbuHamil          = 0.8;
+  static const double cfBalita            = 0.6;
+  static const double cfAnakSekolah       = 0.2;
 
   // ── Rumus Kombinasi CF ────────────────────────────────────────────
   static double _kombinasi(double cf1, double cf2) {
-  if (cf1 >= 0 && cf2 >= 0) {
-    return cf1 + cf2 * (1 - cf1);
-  } else if (cf1 < 0 && cf2 < 0) {
-    return cf1 + cf2 * (1 + cf1);
-  } else {
-    final min = cf1.abs() < cf2.abs() ? cf1.abs() : cf2.abs();
-    return (cf1 + cf2) / (1 - min);
+    if (cf1 >= 0 && cf2 >= 0) {
+      return cf1 + cf2 * (1 - cf1);
+    } else if (cf1 < 0 && cf2 < 0) {
+      return cf1 + cf2 * (1 + cf1);
+    } else {
+      final min = cf1.abs() < cf2.abs() ? cf1.abs() : cf2.abs();
+      return (cf1 + cf2) / (1 - min);
+    }
   }
-}
 
   static double _gabungkan(List<double> listCF) {
     final filtered = listCF.where((c) => c != 0).toList();
@@ -97,153 +106,272 @@ class CFService {
     return hasil.clamp(-1.0, 1.0);
   }
 
-  // ── Hitung CF Sembako ─────────────────────────────────────────────
-  static double _hitungSembako(WargaModel d) {
-  // Pendapatan > 2,5jt → langsung tidak layak Sembako
-  if (d.pendapatanBulanan >= 2500000) return 0.0;
+  // ── Faktor Ekonomi Dasar (dipakai semua jenis bansos) ────────────
+  static List<double> _faktorekonomiDasar(WargaModel d) {
+    List<double> list = [];
 
-  List<double> listCF = [];
+    // Tanggungan
+    if (d.jumlahTanggungan > 4) {
+      list.add(cfTanggunganBanyak);
+    } else if (d.jumlahTanggungan >= 3) {
+      list.add(cfTanggunganSedang);
+    } else if (d.jumlahTanggungan >= 1) {
+      list.add(cfTanggunganSedikit);
+    }
 
-  // Pendapatan
-  if (d.pendapatanBulanan < 500000) {
-    listCF.add(cfPendapatanSangatRendah);
-  } else if (d.pendapatanBulanan < 1500000) {
-    listCF.add(cfPendapatanRendah);
-  } else {
-    listCF.add(cfPendapatanMenengah);
+    // Kondisi Rumah
+    if (d.kondisiRumah == 'Gubuk / Sangat Tidak Layak') {
+      list.add(cfRumahGubuk);
+    } else if (d.kondisiRumah == 'Tidak Permanen') {
+      list.add(cfRumahTidakPermanen);
+    } else if (d.kondisiRumah == 'Semi Permanen') {
+      list.add(cfRumahSemiPermanen);
+    }
+
+    // Lahan
+    if (d.statusLahan == 'Numpang / Tidak Ada') {
+      list.add(cfTidakPunyaLahan);
+    } else {
+      list.add(cfPunyaLahan);
+    }
+
+    // Aset
+    if (d.punyaTernak && d.punyaTabunganEmas) {
+      list.add(cfPunyaKeduanya);
+    } else if (d.punyaTernak) {
+      list.add(cfPunyaTernak);
+    } else if (d.punyaTabunganEmas) {
+      list.add(cfPunyaTabunganEmas);
+    } else {
+      list.add(cfTidakPunyaAset);
+    }
+
+    // Kendaraan > 1
+    if (d.punyaKendaraanLebihSatu) {
+      list.add(cfPunyaKendaraanLebihSatu);
+    }
+
+    return list;
   }
-
-  // Tanggungan
-  if (d.jumlahTanggungan > 4) {
-    listCF.add(cfTanggunganBanyak);
-  } else if (d.jumlahTanggungan >= 3) {
-    listCF.add(cfTanggunganSedang);
-  } else if (d.jumlahTanggungan >= 1) {
-    listCF.add(cfTanggunganSedikit);
-  }
-
-  // Kondisi Rumah
-  if (d.kondisiRumah == 'Gubuk / Sangat Tidak Layak') {
-    listCF.add(cfRumahGubuk);
-  } else if (d.kondisiRumah == 'Tidak Permanen') {
-    listCF.add(cfRumahTidakPermanen);
-  } else if (d.kondisiRumah == 'Semi Permanen') {
-    listCF.add(cfRumahSemiPermanen);
-  }
-
-  // Lahan
-  if (d.statusLahan == 'Numpang / Tidak Ada') {
-    listCF.add(cfTidakPunyaLahan);
-  } else {
-    listCF.add(cfPunyaLahan);
-  }
-
-  // Aset
-  if (d.punyaTernak && d.punyaTabunganEmas) {
-    listCF.add(cfPunyaKeduanya);
-  } else if (d.punyaTernak) {
-    listCF.add(cfPunyaTernak);
-  } else if (d.punyaTabunganEmas) {
-    listCF.add(cfPunyaTabunganEmas);
-  } else {
-    listCF.add(cfTidakPunyaAset);
-  }
-
-  // Kendaraan > 1
-  if (d.punyaKendaraanLebihSatu) {
-    listCF.add(cfPunyaKendaraanLebihSatu);
-  }
-
-  return _gabungkan(listCF);
-}
 
   // ── Hitung CF PKH ─────────────────────────────────────────────────
+  // Syarat: pendapatan < 1,5jt + ada komponen khusus PKH
   static double _hitungPKH(WargaModel d) {
-    List<double> listCF = [];
+    if (d.pendapatanBulanan >= 1500000) return 0.0;
 
-    // Harus memenuhi syarat ekonomi dasar dulu
-    if (d.pendapatanBulanan < 2500000) {
-      if (d.pendapatanBulanan < 500000) listCF.add(cfPendapatanSangatRendah);
-      else if (d.pendapatanBulanan < 1500000) listCF.add(cfPendapatanRendah);
-      else listCF.add(cfPendapatanMenengah);
+    // Harus ada minimal 1 komponen PKH
+    bool adaKomponenPKH = d.adaIbuHamil || d.adaBalita ||
+        d.adaAnakSekolah || d.adaDisabilitas || d.adaLansia;
+    if (!adaKomponenPKH) return 0.0;
+
+    List<double> list = [];
+
+    // Pendapatan
+    if (d.pendapatanBulanan < 500000) {
+      list.add(cfPendapatanSangatRendah);
     } else {
-      return 0.0; // > 2,5jt → tidak memenuhi syarat PKH
+      list.add(cfPendapatanRendah);
     }
 
     // Komponen PKH khusus
     if (d.adaDisabilitas && d.adaLansia) {
-      listCF.add(cfDisabilitasLansia);
+      list.add(cfDisabilitasLansia);
     } else if (d.adaDisabilitas) {
-      listCF.add(cfDisabilitas);
+      list.add(cfDisabilitas);
     } else if (d.adaLansia) {
-      listCF.add(cfLansia);
+      list.add(cfLansia);
+    }
+    if (d.adaIbuHamil)    list.add(cfIbuHamil);
+    if (d.adaBalita)      list.add(cfBalita);
+    if (d.adaAnakSekolah) list.add(cfAnakSekolah);
+
+    // Faktor ekonomi dasar
+    list.addAll(_faktorekonomiDasar(d));
+
+    return _gabungkan(list).clamp(0.0, 1.0);
+  }
+
+  // ── Hitung CF BPNT (Sembako) ──────────────────────────────────────
+  // Syarat: pendapatan < 2,5jt, keluarga miskin umum
+  static double _hitungBPNT(WargaModel d) {
+    if (d.pendapatanBulanan >= 2500000) return 0.0;
+
+    List<double> list = [];
+
+    // Pendapatan
+    if (d.pendapatanBulanan < 500000) {
+      list.add(cfPendapatanSangatRendah);
+    } else if (d.pendapatanBulanan < 1500000) {
+      list.add(cfPendapatanRendah);
+    } else {
+      list.add(cfPendapatanMenengah);
     }
 
-    if (d.adaIbuHamil) listCF.add(cfIbuHamil);
-    if (d.adaBalita)   listCF.add(cfBalita);
-    if (d.adaAnakSekolah) listCF.add(cfAnakSekolah);
+    list.addAll(_faktorekonomiDasar(d));
+    return _gabungkan(list).clamp(0.0, 1.0);
+  }
 
-    return _gabungkan(listCF);
+  // ── Hitung CF PIP ─────────────────────────────────────────────────
+  // Syarat: ada anak sekolah SD–SMA + pendapatan < 1,5jt
+  static double _hitungPIP(WargaModel d) {
+    if (!d.adaAnakSekolah) return 0.0;
+    if (d.pendapatanBulanan >= 1500000) return 0.0;
+
+    List<double> list = [];
+
+    if (d.pendapatanBulanan < 500000) {
+      list.add(cfPendapatanSangatRendah);
+    } else {
+      list.add(cfPendapatanRendah);
+    }
+
+    list.add(cfAnakSekolah);
+    list.addAll(_faktorekonomiDasar(d));
+    return _gabungkan(list).clamp(0.0, 1.0);
+  }
+
+  // ── Hitung CF BLT ─────────────────────────────────────────────────
+  // Syarat: pendapatan < 1,5jt, tidak ada komponen PKH khusus
+  static double _hitungBLT(WargaModel d) {
+    if (d.pendapatanBulanan >= 1500000) return 0.0;
+
+    List<double> list = [];
+
+    if (d.pendapatanBulanan < 500000) {
+      list.add(cfPendapatanSangatRendah);
+    } else {
+      list.add(cfPendapatanRendah);
+    }
+
+    list.addAll(_faktorekonomiDasar(d));
+    return _gabungkan(list).clamp(0.0, 1.0);
+  }
+
+  // ── Hitung CF Bantuan Daerah ──────────────────────────────────────
+  // Syarat: pendapatan < 2,5jt + kondisi ekonomi sulit
+  // tapi tidak tercover program pusat (CF lainnya rendah)
+  static double _hitungBantuanDaerah(WargaModel d, {
+    required double cfPKH,
+    required double cfBPNT,
+    required double cfPIP,
+    required double cfBLT,
+  }) {
+    if (d.pendapatanBulanan >= 2500000) return 0.0;
+
+    // Jika sudah tercover program pusat dengan CF tinggi, tidak perlu bantuan daerah
+    final maxPusat = [cfPKH, cfBPNT, cfPIP, cfBLT]
+        .reduce((a, b) => a > b ? a : b);
+    if (maxPusat >= 0.6) return 0.0;
+
+    List<double> list = [];
+
+    if (d.pendapatanBulanan < 500000) {
+      list.add(cfPendapatanSangatRendah);
+    } else if (d.pendapatanBulanan < 1500000) {
+      list.add(cfPendapatanRendah);
+    } else {
+      list.add(cfPendapatanMenengah);
+    }
+
+    list.addAll(_faktorekonomiDasar(d));
+    return _gabungkan(list).clamp(0.0, 1.0);
   }
 
   // ── Main: Analisis ────────────────────────────────────────────────
   static HasilAnalisis analisis(WargaModel data) {
-    // Blacklist — ASN/PNS/TNI/Polri otomatis tidak layak
+
+    // Blacklist — ASN/PNS/TNI/Polri
     if (data.isASNTNIPolri) {
       return HasilAnalisis(
-        cfSembako: 0.0,
-        cfPKH: 0.0,
+        cfPKH: 0.0, cfBPNT: 0.0, cfPIP: 0.0,
+        cfBLT: 0.0, cfBantuanDaerah: 0.0,
         cfGabungan: 0.0,
         layak: false,
         blacklisted: true,
-        rekomendasiUtama: 'Tidak Layak — ASN/TNI/Polri',
-        alasanLayak: ['ASN, TNI, dan Polri tidak termasuk kriteria penerima bantuan sosial berdasarkan regulasi Kemensos.'],
+        rekomendasiUtama: JenisBansos.tidakLayak,
+        namaRekomendasi: 'Tidak Layak — ASN/TNI/Polri',
+        alasanLayak: ['ASN, TNI, dan Polri tidak memenuhi syarat penerima bantuan sosial berdasarkan regulasi Kemensos.'],
         detailFaktor: [],
       );
     }
 
+    // Pendapatan > 2,5jt langsung tidak layak
     if (data.pendapatanBulanan >= 2500000) {
-    return HasilAnalisis(
-      cfSembako: 0.0,
-      cfPKH: 0.0,
-      cfGabungan: 0.0,
-      layak: false,
-      blacklisted: false,
-      rekomendasiUtama: 'Tidak Layak — Pendapatan Di Atas Batas',
-      alasanLayak: [
-        'Pendapatan Rp ${_rp(data.pendapatanBulanan)}/bulan melebihi batas maksimal kelayakan bansos (Rp 2.500.000/bulan) berdasarkan regulasi DTKS Kemensos.',
-      ],
-      detailFaktor: [
-        DetailFaktor(
-          faktor: 'Pendapatan Bulanan',
-          kondisi: 'Rp ${_rp(data.pendapatanBulanan)}/bulan',
-          cfNilai: 0.0,
-          terpenuhi: false,
-          negatif: true,
-        ),
-      ],
-    );
-  }
-
-    final cfSembako = _hitungSembako(data);
-    final cfPKH     = _hitungPKH(data);
-    final cfGabungan = cfSembako > 0
-        ? _kombinasi(cfSembako, cfPKH > 0 ? cfPKH : 0)
-        : cfSembako;
-
-    final layak = cfGabungan >= 0.4;
-
-    // Rekomendasi
-    String rekomendasi;
-    if (!layak) {
-      rekomendasi = 'Tidak Layak Menerima Bansos';
-    } else if (cfPKH >= 0.6 && cfSembako >= 0.6) {
-      rekomendasi = 'Bansos Sembako + PKH';
-    } else if (cfPKH > cfSembako && cfPKH >= 0.4) {
-      rekomendasi = 'Bansos Uang Tunai (PKH)';
-    } else {
-      rekomendasi = 'Bansos Sembako';
+      return HasilAnalisis(
+        cfPKH: 0.0, cfBPNT: 0.0, cfPIP: 0.0,
+        cfBLT: 0.0, cfBantuanDaerah: 0.0,
+        cfGabungan: 0.0,
+        layak: false,
+        blacklisted: false,
+        rekomendasiUtama: JenisBansos.tidakLayak,
+        namaRekomendasi: 'Tidak Layak — Pendapatan Di Atas Batas',
+        alasanLayak: ['Pendapatan Rp ${_rp(data.pendapatanBulanan)}/bulan melebihi batas maksimal kelayakan bansos (Rp 2.500.000/bulan).'],
+        detailFaktor: [
+          DetailFaktor(
+            faktor: 'Pendapatan Bulanan',
+            kondisi: 'Rp ${_rp(data.pendapatanBulanan)}/bulan',
+            cfNilai: 0.0,
+            terpenuhi: false,
+            negatif: true,
+          ),
+        ],
+      );
     }
+
+    // Hitung semua CF
+    final cfPKH          = _hitungPKH(data);
+    final cfBPNT         = _hitungBPNT(data);
+    final cfPIP          = _hitungPIP(data);
+    final cfBLT          = _hitungBLT(data);
+    final cfBantuanDaerah = _hitungBantuanDaerah(
+      data,
+      cfPKH: cfPKH, cfBPNT: cfBPNT,
+      cfPIP: cfPIP, cfBLT: cfBLT,
+    );
+
+    // Tentukan rekomendasi utama (CF tertinggi = prioritas)
+    final Map<JenisBansos, double> semuaCF = {
+      JenisBansos.pkh:           cfPKH,
+      JenisBansos.bpnt:          cfBPNT,
+      JenisBansos.pip:           cfPIP,
+      JenisBansos.blt:           cfBLT,
+      JenisBansos.bantuanDaerah: cfBantuanDaerah,
+    };
+
+    // Urutan prioritas jika CF sama
+    final List<JenisBansos> prioritas = [
+      JenisBansos.pkh,
+      JenisBansos.bpnt,
+      JenisBansos.pip,
+      JenisBansos.blt,
+      JenisBansos.bantuanDaerah,
+    ];
+
+    JenisBansos rekomendasiTerpilih = JenisBansos.tidakLayak;
+    double cfTertinggi = 0.0;
+
+    for (final jenis in prioritas) {
+      final cf = semuaCF[jenis] ?? 0.0;
+      if (cf > cfTertinggi) {
+        cfTertinggi = cf;
+        rekomendasiTerpilih = jenis;
+      }
+    }
+
+    final layak = cfTertinggi >= 0.4;
+    if (!layak) rekomendasiTerpilih = JenisBansos.tidakLayak;
+
+    final cfGabungan = cfTertinggi;
+
+    // Nama rekomendasi
+    final Map<JenisBansos, String> namaMap = {
+      JenisBansos.pkh:           'Program Keluarga Harapan (PKH)',
+      JenisBansos.bpnt:          'BPNT / Bantuan Pangan Non Tunai (Sembako)',
+      JenisBansos.pip:           'PIP / Program Indonesia Pintar',
+      JenisBansos.blt:           'BLT / Bantuan Langsung Tunai',
+      JenisBansos.bantuanDaerah: 'Bantuan Sosial Daerah',
+      JenisBansos.tidakLayak:    'Tidak Layak Menerima Bantuan Sosial',
+    };
 
     // Alasan
     List<String> alasan = [];
@@ -266,15 +394,14 @@ class CFService {
     if (data.adaLansia)      alasan.add('Terdapat anggota lanjut usia (≥ 60 tahun)');
     if (data.adaIbuHamil)    alasan.add('Terdapat ibu hamil dalam keluarga');
     if (data.adaBalita)      alasan.add('Terdapat anak balita usia 0–6 tahun');
+    if (data.adaAnakSekolah) alasan.add('Terdapat anak usia sekolah (SD–SMA)');
 
     // Detail Faktor
     double cfPendapatanVal = data.pendapatanBulanan < 500000
         ? cfPendapatanSangatRendah
         : data.pendapatanBulanan < 1500000
             ? cfPendapatanRendah
-            : data.pendapatanBulanan < 2500000
-                ? cfPendapatanMenengah
-                : cfPendapatanTinggi;
+            : cfPendapatanMenengah;
 
     double cfTanggunganVal = data.jumlahTanggungan > 4
         ? cfTanggunganBanyak
@@ -304,7 +431,6 @@ class CFService {
         kondisi: 'Rp ${_rp(data.pendapatanBulanan)}/bulan',
         cfNilai: cfPendapatanVal,
         terpenuhi: data.pendapatanBulanan < 2500000,
-        negatif: cfPendapatanVal < 0,
       ),
       DetailFaktor(
         faktor: 'Jumlah Tanggungan',
@@ -378,7 +504,7 @@ class CFService {
         terpenuhi: data.adaBalita,
       ),
       DetailFaktor(
-        faktor: 'Anak Usia Sekolah',
+        faktor: 'Anak Usia Sekolah (SD–SMA)',
         kondisi: data.adaAnakSekolah ? 'Ada' : 'Tidak Ada',
         cfNilai: data.adaAnakSekolah ? cfAnakSekolah : 0.0,
         terpenuhi: data.adaAnakSekolah,
@@ -386,12 +512,16 @@ class CFService {
     ];
 
     return HasilAnalisis(
-      cfSembako: cfSembako.clamp(0.0, 1.0),
-      cfPKH: cfPKH.clamp(0.0, 1.0),
+      cfPKH: cfPKH,
+      cfBPNT: cfBPNT,
+      cfPIP: cfPIP,
+      cfBLT: cfBLT,
+      cfBantuanDaerah: cfBantuanDaerah,
       cfGabungan: cfGabungan,
       layak: layak,
       blacklisted: false,
-      rekomendasiUtama: rekomendasi,
+      rekomendasiUtama: rekomendasiTerpilih,
+      namaRekomendasi: namaMap[rekomendasiTerpilih]!,
       alasanLayak: alasan,
       detailFaktor: detail,
     );

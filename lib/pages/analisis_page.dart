@@ -77,57 +77,62 @@ class _AnalisisPageState extends State<AnalisisPage>
     _simulateSteps();
   }
 
-  void _simulateSteps() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() {
-        _steps[0]['done'] = true;
-        _steps[0]['subtitle'] = 'Selesai — data valid';
-        _currentStep = 1;
-      });
-    }
-
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        _steps[1]['done'] = true;
-        _steps[1]['subtitle'] =
-            'Pendapatan Rp ${widget.dataWarga.pendapatanBulanan.toInt()} / bulan';
-        _currentStep = 2;
-      });
-    }
-
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) {
-      setState(() {
-        _steps[2]['done'] = true;
-        _steps[2]['subtitle'] =
-            'CF Gabungan: ${(_hasil.cfGabungan * 100).toStringAsFixed(0)}%';
-        _currentStep = 3;
-      });
-    }
-
-    await Future.delayed(const Duration(seconds: 1));
-    if (mounted) {
-      setState(() {
-        _steps[3]['done'] = true;
-        _steps[3]['subtitle'] = _hasil.rekomendasiUtama;
-      });
-    }
-
-    await Future.delayed(const Duration(milliseconds: 500));
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => DetailKeputusanPage(
-            dataWarga: widget.dataWarga,
-            hasil: _hasil,
-          ),
-        ),
-      );
-    }
+void _simulateSteps() async {
+  // Step 1 — Validasi Data
+  await Future.delayed(const Duration(seconds: 2));
+  if (mounted) {
+    setState(() {
+      _steps[0]['done'] = true;
+      _steps[0]['subtitle'] = 'Selesai — data valid';
+      _currentStep = 1;
+    });
   }
+
+  // Step 2 — Hitung Indeks Kesejahteraan
+  await Future.delayed(const Duration(seconds: 3));
+  if (mounted) {
+    setState(() {
+      _steps[1]['done'] = true;
+      _steps[1]['subtitle'] =
+          'Pendapatan Rp ${widget.dataWarga.pendapatanBulanan.toInt()} / bulan';
+      _currentStep = 2;
+    });
+  }
+
+  // Step 3 — Hitung CF
+  await Future.delayed(const Duration(seconds: 3));
+  if (mounted) {
+    setState(() {
+      _steps[2]['done'] = true;
+      _steps[2]['subtitle'] =
+          'CF Gabungan: ${(_hasil.cfGabungan * 100).toStringAsFixed(0)}%';
+      _currentStep = 3;
+    });
+  }
+
+  // Step 4 — Keputusan
+  await Future.delayed(const Duration(seconds: 2));
+  if (mounted) {
+    setState(() {
+      _steps[3]['done'] = true;
+      _steps[3]['subtitle'] = _hasil.namaRekomendasi;
+    });
+  }
+
+  // Jeda sebelum pindah halaman
+  await Future.delayed(const Duration(seconds: 1));
+  if (mounted) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => DetailKeputusanPage(
+          dataWarga: widget.dataWarga,
+          hasil: _hasil,
+        ),
+      ),
+    );
+  }
+}
 
   @override
   void dispose() {
