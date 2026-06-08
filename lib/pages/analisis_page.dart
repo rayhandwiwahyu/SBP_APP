@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../models/warga_model.dart';
 import '../services/cf_service.dart';
+import '../services/database_service.dart';
 import 'detail_keputusan_page.dart';
 
 class AnalisisPage extends StatefulWidget {
@@ -118,6 +119,36 @@ void _simulateSteps() async {
       _steps[3]['subtitle'] = _hasil.namaRekomendasi;
     });
   }
+
+  await Future.delayed(const Duration(seconds: 1));
+if (mounted) {
+  setState(() {
+    _steps[3]['subtitle'] = 'Menyimpan hasil ke database...';
+  });
+}
+
+try {
+  await DatabaseService.simpanHasilAnalisis(
+    warga: widget.dataWarga,
+    hasil: _hasil,
+  );
+} catch (e) {
+  debugPrint('Gagal simpan ke database: $e');
+}
+
+// Pindah ke halaman detail
+await Future.delayed(const Duration(milliseconds: 500));
+if (mounted) {
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (_) => DetailKeputusanPage(
+        dataWarga: widget.dataWarga,
+        hasil: _hasil,
+      ),
+    ),
+  );
+}
 
   // Jeda sebelum pindah halaman
   await Future.delayed(const Duration(seconds: 1));

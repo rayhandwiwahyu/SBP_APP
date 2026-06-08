@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'input_data_warga_page.dart';
 import 'riwayat_page.dart';
 import 'profile_page.dart';
+import '../services/database_service.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -12,6 +13,31 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   int _selectedIndex = 0;
+
+  int _totalWarga      = 0;
+  int _totalLayak      = 0;
+  int _totalTidakLayak = 0;
+  bool _loadingStats   = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatistik(); // ✅ TAMBAHKAN INI
+  }
+
+  Future<void> _loadStatistik() async {
+    try {
+      final stats = await DatabaseService.ambilStatistik();
+      setState(() {
+        _totalWarga      = stats['total'] ?? 0;
+        _totalLayak      = stats['layak'] ?? 0;
+        _totalTidakLayak = stats['tidakLayak'] ?? 0;
+        _loadingStats    = false;
+      });
+    } catch (e) {
+      setState(() => _loadingStats = false);
+    }
+  }
 
   static const Color primaryBlue = Color(0xFF1565C0);
   static const Color lightBlue = Color(0xFF1E88E5);
@@ -153,39 +179,39 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildStatisticsRow() {
-    return Column(
-      children: [
-        _buildStatCard(
-          icon: Icons.people_alt_outlined,
-          iconBgColor: const Color(0xFFE3F2FD),
-          iconColor: lightBlue,
-          label: 'Total Penerima',
-          value: '1,248',
-          unit: 'jiwa',
-        ),
-        const SizedBox(height: 10),
-        _buildStatCard(
-          icon: Icons.check_circle_outline,
-          iconBgColor: const Color(0xFFE8F5E9),
-          iconColor: successGreen,
-          label: 'Layak',
-          value: '842',
-          unit: 'terverifikasi',
-          valueColor: successGreen,
-        ),
-        const SizedBox(height: 10),
-        _buildStatCard(
-          icon: Icons.cancel_outlined,
-          iconBgColor: const Color(0xFFFFEBEE),
-          iconColor: dangerRed,
-          label: 'Tidak Layak',
-          value: '406',
-          unit: 'ditolak',
-          valueColor: dangerRed,
-        ),
-      ],
-    );
-  }
+  return Column(
+    children: [
+      _buildStatCard(
+        icon: Icons.people_alt_outlined,
+        iconBgColor: const Color(0xFFE3F2FD),
+        iconColor: lightBlue,
+        label: 'Total Warga Dianalisis',
+        value: _loadingStats ? '...' : '$_totalWarga',
+        unit: 'data',
+      ),
+      const SizedBox(height: 10),
+      _buildStatCard(
+        icon: Icons.check_circle_outline,
+        iconBgColor: const Color(0xFFE8F5E9),
+        iconColor: successGreen,
+        label: 'Layak',
+        value: _loadingStats ? '...' : '$_totalLayak',
+        unit: 'warga',
+        valueColor: successGreen,
+      ),
+      const SizedBox(height: 10),
+      _buildStatCard(
+        icon: Icons.cancel_outlined,
+        iconBgColor: const Color(0xFFFFEBEE),
+        iconColor: dangerRed,
+        label: 'Tidak Layak',
+        value: _loadingStats ? '...' : '$_totalTidakLayak',
+        unit: 'warga',
+        valueColor: dangerRed,
+      ),
+    ],
+  );
+}
 
   Widget _buildStatCard({
     required IconData icon,
