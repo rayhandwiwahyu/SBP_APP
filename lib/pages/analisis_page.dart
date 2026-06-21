@@ -63,12 +63,12 @@ class _AnalisisPageState extends State<AnalisisPage>
 
     _progressController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: const Duration(seconds: 11),
     );
 
     _progressAnimation = Tween<double>(
       begin: 0,
-      end: _hasil.cfGabungan,
+      end: 1.0,
     ).animate(CurvedAnimation(
       parent: _progressController,
       curve: Curves.easeInOut,
@@ -79,7 +79,7 @@ class _AnalisisPageState extends State<AnalisisPage>
   }
 
 void _simulateSteps() async {
-  // Step 1 — Validasi Data
+  print('🟢 Step 1 mulai');
   await Future.delayed(const Duration(seconds: 2));
   if (mounted) {
     setState(() {
@@ -88,30 +88,31 @@ void _simulateSteps() async {
       _currentStep = 1;
     });
   }
+  print('🟢 Step 1 selesai');
 
-  // Step 2 — Hitung Indeks Kesejahteraan
+  print('🟢 Step 2 mulai');
   await Future.delayed(const Duration(seconds: 3));
   if (mounted) {
     setState(() {
       _steps[1]['done'] = true;
-      _steps[1]['subtitle'] =
-          'Pendapatan Rp ${widget.dataWarga.pendapatanBulanan.toInt()} / bulan';
+      _steps[1]['subtitle'] = 'Pendapatan Rp ${widget.dataWarga.pendapatanBulanan.toInt()} / bulan';
       _currentStep = 2;
     });
   }
+  print('🟢 Step 2 selesai');
 
-  // Step 3 — Hitung CF
+  print('🟢 Step 3 mulai');
   await Future.delayed(const Duration(seconds: 3));
   if (mounted) {
     setState(() {
       _steps[2]['done'] = true;
-      _steps[2]['subtitle'] =
-          'CF Gabungan: ${(_hasil.cfGabungan * 100).toStringAsFixed(0)}%';
+      _steps[2]['subtitle'] = 'CF Gabungan: ${(_hasil.cfGabungan * 100).toStringAsFixed(0)}%';
       _currentStep = 3;
     });
   }
+  print('🟢 Step 3 selesai');
 
-  // Step 4 — Keputusan
+  print('🟢 Step 4 mulai');
   await Future.delayed(const Duration(seconds: 2));
   if (mounted) {
     setState(() {
@@ -119,39 +120,28 @@ void _simulateSteps() async {
       _steps[3]['subtitle'] = _hasil.namaRekomendasi;
     });
   }
+  print('🟢 Step 4 selesai');
 
+  print('🟢 Mau simpan ke database...');
   await Future.delayed(const Duration(seconds: 1));
-if (mounted) {
-  setState(() {
-    _steps[3]['subtitle'] = 'Menyimpan hasil ke database...';
-  });
-}
+  if (mounted) {
+    setState(() {
+      _steps[3]['subtitle'] = 'Menyimpan hasil ke database...';
+    });
+  }
 
-try {
-  await DatabaseService.simpanHasilAnalisis(
-    warga: widget.dataWarga,
-    hasil: _hasil,
-  );
-} catch (e) {
-  debugPrint('Gagal simpan ke database: $e');
-}
+  try {
+    await DatabaseService.simpanHasilAnalisis(
+      warga: widget.dataWarga,
+      hasil: _hasil,
+    );
+    print('🟢 Simpan database SUKSES');
+  } catch (e) {
+    print('🔴 Gagal simpan ke database: $e');
+  }
 
-// Pindah ke halaman detail
-await Future.delayed(const Duration(milliseconds: 500));
-if (mounted) {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (_) => DetailKeputusanPage(
-        dataWarga: widget.dataWarga,
-        hasil: _hasil,
-      ),
-    ),
-  );
-}
-
-  // Jeda sebelum pindah halaman
-  await Future.delayed(const Duration(seconds: 1));
+  print('🟢 Mau pindah halaman...');
+  await Future.delayed(const Duration(milliseconds: 500));
   if (mounted) {
     Navigator.pushReplacement(
       context,
@@ -162,6 +152,9 @@ if (mounted) {
         ),
       ),
     );
+    print('🟢 Pindah halaman BERHASIL dipanggil');
+  } else {
+    print('🔴 mounted = false, tidak bisa pindah halaman');
   }
 }
 

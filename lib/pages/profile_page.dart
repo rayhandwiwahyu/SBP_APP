@@ -1,11 +1,54 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
+import '../services/database_service.dart';
+import 'dashboard_page.dart';
+import 'riwayat_page.dart';
+import 'input_data_warga_page.dart';
 import 'login_page.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   static const Color primaryBlue = Color(0xFF1565C0);
   static const Color bgDark = Color(0xFF0D1B2A);
+
+  String _namaLengkap = '...';
+  String _jabatan      = '...';
+  String _instansi     = '...';
+  String _email        = '...';
+  bool _isLoading      = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfil();
+  }
+
+  Future<void> _loadProfil() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final uid  = user?.uid ?? '';
+      final profil = await DatabaseService.ambilProfilUser(uid);
+
+      if (mounted) {
+        setState(() {
+          _namaLengkap = profil?['namaLengkap'] as String? ?? 'Tanpa Nama';
+          _jabatan      = profil?['jabatan'] as String? ?? '-';
+          _instansi     = profil?['instansi'] as String? ?? '-';
+          _email        = user?.email ?? '-';
+          _isLoading    = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,22 +66,24 @@ class ProfilePage extends StatelessWidget {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Column(
-          children: [
-            _buildProfileHeader(),
-            const SizedBox(height: 20),
-            _buildMenuList(context),
-            const SizedBox(height: 20),
-            _buildLogoutButton(context),
-            const SizedBox(height: 20),
-            _buildFooterText(),
-            const SizedBox(height: 30),
-          ],
-        ),
-      ),
-      bottomNavigationBar: _buildBottomNav(),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: primaryBlue))
+          : SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  _buildProfileHeader(),
+                  const SizedBox(height: 20),
+                  _buildMenuList(context),
+                  const SizedBox(height: 20),
+                  _buildLogoutButton(context),
+                  const SizedBox(height: 20),
+                  _buildFooterText(),
+                  const SizedBox(height: 30),
+                ],
+              ),
+            ),
+      bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
@@ -74,14 +119,24 @@ class ProfilePage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          const Text(
-            'Budi Santoso',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+          Text(
+            _namaLengkap,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Petugas Kelurahan',
-            style: TextStyle(fontSize: 13, color: Colors.grey),
+          Text(
+            _jabatan,
+            style: const TextStyle(fontSize: 13, color: Colors.grey),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _instansi,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _email,
+            style: const TextStyle(fontSize: 11, color: Colors.grey),
           ),
           const SizedBox(height: 12),
           Container(
@@ -172,12 +227,16 @@ class ProfilePage extends StatelessWidget {
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const LoginPage()),
-                        (route) => false,
-                      );
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await AuthService.logout();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const LoginPage()),
+                          (route) => false,
+                        );
+                      }
                     },
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFC62828), foregroundColor: Colors.white),
                     child: const Text('Logout'),
@@ -208,7 +267,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(color: Colors.white),
       child: BottomNavigationBar(
@@ -221,12 +280,35 @@ class ProfilePage extends StatelessWidget {
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
         unselectedLabelStyle: const TextStyle(fontSize: 11),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
-          BottomNavigationBarItem(icon: Icon(Icons.history_outlined), label: 'Riwayat'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), label: 'Analisis'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Dashboard'),
+          BottomNavigationBarItem(icon: Icon(Icons.history_outlined), activeIcon: Icon(Icons.history), label: 'Riwayat'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Analisis'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
         ],
-        onTap: (_) {},
+        onTap: (index) {
+          if (index == 3) return;
+          switch (index) {
+            case 0:
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const DashboardPage()),
+                (route) => false,
+              );
+              break;
+            case 1:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const RiwayatPage()),
+              );
+              break;
+            case 2:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const InputDataWargaPage()),
+              );
+              break;
+          }
+        },
       ),
     );
   }

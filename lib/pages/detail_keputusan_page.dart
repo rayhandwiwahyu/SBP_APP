@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/warga_model.dart';
 import '../services/cf_service.dart';
 import 'dashboard_page.dart';
+import '../services/pdf_service.dart';
 
 class DetailKeputusanPage extends StatelessWidget {
   final WargaModel dataWarga;
@@ -428,7 +429,12 @@ class DetailKeputusanPage extends StatelessWidget {
         children: [
           Expanded(
             child: OutlinedButton.icon(
-              onPressed: () {},
+              onPressed: () async {
+                await PdfService.cetakHasilAnalisis(
+                  warga: dataWarga,
+                  hasil: hasil,
+                );
+              },
               icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
               label: const Text(
                 'Cetak PDF',

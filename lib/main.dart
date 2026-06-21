@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-
-import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'pages/login_page.dart';
-Future<void> main() async {
+import 'pages/dashboard_page.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -21,118 +18,24 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Aplikasi Bansos',
-      home: const LoginPage(),
-    );
-  }
-}
-
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-
-      backgroundColor: const Color(0xFFF5F7FA),
-
-      appBar: AppBar(
-        title: const Text("Sistem Bansos"),
-        centerTitle: true,
-        backgroundColor: Colors.blue,
-      ),
-
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-
-              const Icon(
-                Icons.account_balance,
-                size: 100,
-                color: Colors.blue,
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text(
-                "Selamat Datang",
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 10),
-
-              const Text(
-                "Aplikasi Penentuan Kelayakan Bantuan Sosial",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black54,
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-
-                decoration: BoxDecoration(
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              backgroundColor: Color(0xFF0D1B2A),
+              body: Center(
+                child: CircularProgressIndicator(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-
-                child: Column(
-                  children: [
-
-                    const Text(
-                      "Mulai Pendataan",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    SizedBox(
-                      width: double.infinity,
-
-                      child: ElevatedButton(
-                        onPressed: () {
-                          print("Tombol ditekan");
-                        },
-
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 15,
-                          ),
-                        ),
-
-                        child: const Text(
-                          "Mulai",
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ),
-                    ),
-                  ],
                 ),
               ),
-            ],
-          ),
-        ),
+            );
+          }
+          if (snapshot.hasData) {
+            return const DashboardPage();
+          }
+          return const LoginPage();
+        },
       ),
     );
   }

@@ -3,6 +3,10 @@ import 'input_data_warga_page.dart';
 import 'riwayat_page.dart';
 import 'profile_page.dart';
 import '../services/database_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'data_warga_page.dart';
+import 'hasil_analisis_page.dart';
+import 'laporan_page.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -12,6 +16,7 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  String _namaUser = 'Petugas';
   int _selectedIndex = 0;
 
   int _totalWarga      = 0;
@@ -20,10 +25,25 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _loadingStats   = true;
 
   @override
-  void initState() {
-    super.initState();
-    _loadStatistik(); // ✅ TAMBAHKAN INI
+void initState() {
+  super.initState();
+  _loadStatistik();
+  _loadProfil(); 
+}
+
+Future<void> _loadProfil() async {
+  try {
+    final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+    final profil = await DatabaseService.ambilProfilUser(uid);
+    if (profil != null && mounted) {
+      setState(() {
+        _namaUser = profil['namaLengkap'] as String? ?? 'Petugas';
+      });
+    }
+  } catch (e) {
+    // biarkan default "Petugas" kalau gagal
   }
+}
 
   Future<void> _loadStatistik() async {
     try {
@@ -45,7 +65,7 @@ class _DashboardPageState extends State<DashboardPage> {
   static const Color dangerRed = Color(0xFFC62828);
   static const Color tealAccent = Color(0xFF00695C);
   static const Color bgGrey = Color(0xFFF5F6FA);
-  static const Color bgDark = Color(0xFF0D1B2A);
+  
 
   @override
   Widget build(BuildContext context) {
@@ -156,14 +176,14 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Halo, Admin Petugas',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+          Text(
+          'Halo, Pak/Bu $_namaUser',
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
+       ),
           const SizedBox(height: 6),
           Text(
             'Selamat datang kembali di dashboard\nverifikasi data bantuan sosial.',
@@ -294,7 +314,7 @@ class _DashboardPageState extends State<DashboardPage> {
         'desc': 'Kelola data penduduk',
         'color': const Color(0xFF1565C0),
         'bgColor': const Color(0xFFE3F2FD),
-        'page': const InputDataWargaPage(),
+        'page': const DataWargaPage(),
       },
       {
         'icon': Icons.fact_check_outlined,
@@ -310,7 +330,7 @@ class _DashboardPageState extends State<DashboardPage> {
         'desc': 'Laporan kelayakan',
         'color': const Color(0xFF6A1B9A),
         'bgColor': const Color(0xFFF3E5F5),
-        'page': const RiwayatPage(),
+        'page': const HasilAnalisisPage(),
       },
       {
         'icon': Icons.history_outlined,
@@ -326,7 +346,7 @@ class _DashboardPageState extends State<DashboardPage> {
         'desc': 'Export rekap',
         'color': const Color(0xFF00695C),
         'bgColor': const Color(0xFFE0F2F1),
-        'page': const RiwayatPage(),
+        'page': const LaporanPage(),
       },
       {
         'icon': Icons.manage_accounts_outlined,
@@ -374,7 +394,7 @@ class _DashboardPageState extends State<DashboardPage> {
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 1.5,
+            childAspectRatio: 1.3,
           ),
           itemBuilder: (context, index) {
             final item = menuItems[index];

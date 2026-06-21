@@ -51,38 +51,38 @@ class DetailFaktor {
 
 class CFService {
   // ── CF Pakar — Pendapatan ─────────────────────────────────────────
-  static const double cfPendapatanSangatRendah = 1.0; // < 500rb
-  static const double cfPendapatanRendah       = 1.0; // 500rb–1,5jt
-  static const double cfPendapatanMenengah     = 1.0; // 1,5jt–2,5jt
+static const double cfPendapatanSangatRendah = 0.9;  // < 500rb
+static const double cfPendapatanRendah       = 0.7;  // 500rb–1,5jt
+static const double cfPendapatanMenengah     = 0.5;  // 1,5jt–2,5jt
 
-  // ── CF Pakar — Tanggungan ─────────────────────────────────────────
-  static const double cfTanggunganBanyak  = 0.8; // > 4 orang
-  static const double cfTanggunganSedang  = 1.0; // 3–4 orang
-  static const double cfTanggunganSedikit = 0.6; // 1–2 orang
+// ── CF Pakar — Tanggungan ─────────────────────────────────────────
+static const double cfTanggunganBanyak  = 0.8;  // > 4 orang
+static const double cfTanggunganSedang  = 0.7;  // 3–4 orang
+static const double cfTanggunganSedikit = 0.4;  // 1–2 orang
 
-  // ── CF Pakar — Kondisi Rumah ──────────────────────────────────────
-  static const double cfRumahGubuk         = 1.0;
-  static const double cfRumahTidakPermanen = 0.8;
-  static const double cfRumahSemiPermanen  = 0.6;
+// ── CF Pakar — Kondisi Rumah ──────────────────────────────────────
+static const double cfRumahGubuk         = 0.9;
+static const double cfRumahTidakPermanen = 0.7;
+static const double cfRumahSemiPermanen  = 0.5;
 
-  // ── CF Pakar — Lahan ─────────────────────────────────────────────
-  static const double cfTidakPunyaLahan = 1.0;
-  static const double cfPunyaLahan      = -0.4;
+// ── CF Pakar — Lahan ─────────────────────────────────────────────
+static const double cfTidakPunyaLahan = 0.8;
+static const double cfPunyaLahan      = -0.4;
 
-  // ── CF Pakar — Aset ──────────────────────────────────────────────
-  static const double cfTidakPunyaAset          = 0.8;
-  static const double cfPunyaTernak             = -0.6;
-  static const double cfPunyaTabunganEmas       = -0.4;
-  static const double cfPunyaKeduanya           = -0.2;
-  static const double cfPunyaKendaraanLebihSatu = -0.6;
+// ── CF Pakar — Aset ──────────────────────────────────────────────
+static const double cfTidakPunyaAset          = 0.6;
+static const double cfPunyaTernak             = -0.6;
+static const double cfPunyaTabunganEmas       = -0.4;
+static const double cfPunyaKeduanya           = -0.2;
+static const double cfPunyaKendaraanLebihSatu = -0.6;
 
-  // ── CF Pakar — Kondisi Khusus ─────────────────────────────────────
-  static const double cfDisabilitas       = 1.0;
-  static const double cfLansia            = 0.8;
-  static const double cfDisabilitasLansia = 1.0;
-  static const double cfIbuHamil          = 0.8;
-  static const double cfBalita            = 0.6;
-  static const double cfAnakSekolah       = 0.2;
+// ── CF Pakar — Kondisi Khusus ─────────────────────────────────────
+static const double cfDisabilitas       = 0.85;
+static const double cfLansia            = 0.75;
+static const double cfDisabilitasLansia = 0.9;
+static const double cfIbuHamil          = 0.8;
+static const double cfBalita            = 0.6;
+static const double cfAnakSekolah       = 0.2;
 
   // ── Rumus Kombinasi CF ────────────────────────────────────────────
   static double _kombinasi(double cf1, double cf2) {
@@ -194,22 +194,29 @@ class CFService {
   // ── Hitung CF BPNT (Sembako) ──────────────────────────────────────
   // Syarat: pendapatan < 2,5jt, keluarga miskin umum
   static double _hitungBPNT(WargaModel d) {
-    if (d.pendapatanBulanan >= 2500000) return 0.0;
+  if (d.pendapatanBulanan >= 2500000) return 0.0;
 
-    List<double> list = [];
+  List<double> list = [];
 
-    // Pendapatan
-    if (d.pendapatanBulanan < 500000) {
-      list.add(cfPendapatanSangatRendah);
-    } else if (d.pendapatanBulanan < 1500000) {
-      list.add(cfPendapatanRendah);
-    } else {
-      list.add(cfPendapatanMenengah);
-    }
-
-    list.addAll(_faktorekonomiDasar(d));
-    return _gabungkan(list).clamp(0.0, 1.0);
+  if (d.pendapatanBulanan < 500000) {
+    list.add(cfPendapatanSangatRendah);
+    print('Pendapatan: cfSangatRendah = $cfPendapatanSangatRendah');
+  } else if (d.pendapatanBulanan < 1500000) {
+    list.add(cfPendapatanRendah);
+    print('Pendapatan: cfRendah = $cfPendapatanRendah');
+  } else {
+    list.add(cfPendapatanMenengah);
+    print('Pendapatan: cfMenengah = $cfPendapatanMenengah');
   }
+
+  list.addAll(_faktorekonomiDasar(d));
+  
+  print('List CF BPNT: $list');
+  final hasil = _gabungkan(list).clamp(0.0, 1.0);
+  print('Hasil CF BPNT: $hasil');
+  
+  return hasil;
+}
 
   // ── Hitung CF PIP ─────────────────────────────────────────────────
   // Syarat: ada anak sekolah SD–SMA + pendapatan < 1,5jt

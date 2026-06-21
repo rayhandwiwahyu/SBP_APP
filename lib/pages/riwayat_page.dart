@@ -3,6 +3,10 @@ import '../models/warga_model.dart';
 import '../services/cf_service.dart';
 import '../services/database_service.dart';
 import 'detail_keputusan_page.dart';
+import 'dashboard_page.dart';
+import 'input_data_warga_page.dart';
+import 'profile_page.dart';
+import 'hasil_analisis_page.dart';
 
 class RiwayatPage extends StatefulWidget {
   const RiwayatPage({super.key});
@@ -15,11 +19,8 @@ class _RiwayatPageState extends State<RiwayatPage> {
   static const Color primaryBlue = Color(0xFF1565C0);
   static const Color bgDark      = Color(0xFF0D1B2A);
 
-  final _searchController = TextEditingController();
-  List<Map<String, dynamic>> _semuaData  = [];
-  List<Map<String, dynamic>> _filteredData = [];
+  List<Map<String, dynamic>> _data = [];
   bool _isLoading = true;
-  String _filterStatus = 'Semua';
 
   @override
   void initState() {
@@ -27,20 +28,14 @@ class _RiwayatPageState extends State<RiwayatPage> {
     _loadData();
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
       final data = await DatabaseService.ambilSemuaWarga();
+      final tigaTerbaru = data.take(3).toList();
       setState(() {
-        _semuaData    = data;
-        _filteredData = data;
-        _isLoading    = false;
+        _data      = tigaTerbaru;
+        _isLoading = false;
       });
     } catch (e) {
       setState(() => _isLoading = false);
@@ -53,28 +48,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
         );
       }
     }
-  }
-
-  void _filterData(String query) {
-    setState(() {
-      _filteredData = _semuaData.where((item) {
-        final nama = (item['namaLengkap'] as String? ?? '').toLowerCase();
-        final nik  = (item['nik'] as String? ?? '').toLowerCase();
-        final q    = query.toLowerCase();
-        final matchQuery  = nama.contains(q) || nik.contains(q);
-        final matchStatus = _filterStatus == 'Semua'
-            ? true
-            : _filterStatus == 'Layak'
-                ? item['layak'] == true
-                : item['layak'] == false;
-        return matchQuery && matchStatus;
-      }).toList();
-    });
-  }
-
-  void _setFilter(String status) {
-    setState(() => _filterStatus = status);
-    _filterData(_searchController.text);
   }
 
   @override
@@ -98,13 +71,11 @@ class _RiwayatPageState extends State<RiwayatPage> {
       ),
       body: Column(
         children: [
-          _buildSearchAndFilter(),
+          _buildHeaderSection(),
           Expanded(
             child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(color: primaryBlue),
-                  )
-                : _filteredData.isEmpty
+                ? const Center(child: CircularProgressIndicator(color: primaryBlue))
+                : _data.isEmpty
                     ? _buildEmptyState()
                     : RefreshIndicator(
                         onRefresh: _loadData,
@@ -113,21 +84,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                           physics: const AlwaysScrollableScrollPhysics(),
                           padding: const EdgeInsets.all(16),
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Hasil Analisis Terakhir',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                                Text(
-                                  '${_filteredData.length} Data',
-                                  style: const TextStyle(color: Colors.grey, fontSize: 12),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            ..._filteredData.map((item) => _buildRiwayatCard(item)),
+                            ..._data.map((item) => _buildRiwayatCard(item)),
                             const SizedBox(height: 20),
                           ],
                         ),
@@ -160,47 +117,28 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
-  Widget _buildSearchAndFilter() {
+  Widget _buildHeaderSection() {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      child: Column(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          TextField(
-            controller: _searchController,
-            onChanged: _filterData,
-            decoration: InputDecoration(
-              hintText: 'Cari nama atau NIK...',
-              hintStyle: const TextStyle(fontSize: 13, color: Colors.black38),
-              prefixIcon: const Icon(Icons.search, color: Colors.grey, size: 20),
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: primaryBlue),
-              ),
-              filled: true,
-              fillColor: const Color(0xFFF9F9F9),
-            ),
+          const Text(
+            '3 Analisis Terbaru',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
           ),
-          const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('Semua',      _filterStatus == 'Semua'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Layak',      _filterStatus == 'Layak'),
-                const SizedBox(width: 8),
-                _buildFilterChip('Tidak Layak', _filterStatus == 'Tidak Layak'),
-              ],
+          TextButton.icon(
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const HasilAnalisisPage()),
+              );
+            },
+            icon: const Icon(Icons.list_alt, size: 16, color: primaryBlue),
+            label: const Text(
+              'Lihat Semua',
+              style: TextStyle(fontSize: 12, color: primaryBlue, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -208,37 +146,13 @@ class _RiwayatPageState extends State<RiwayatPage> {
     );
   }
 
-  Widget _buildFilterChip(String label, bool selected) {
-    return GestureDetector(
-      onTap: () => _setFilter(label),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color: selected ? primaryBlue : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? primaryBlue : Colors.grey.shade300,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : Colors.grey.shade600,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildRiwayatCard(Map<String, dynamic> item) {
-    final isLayak  = item['layak'] == true;
-    final nama     = item['namaLengkap'] as String? ?? '-';
-    final nik      = item['nik'] as String? ?? '-';
-    final tanggal  = item['tanggalAnalisis'] as String? ?? '-';
+    final isLayak     = item['layak'] == true;
+    final nama        = item['namaLengkap'] as String? ?? '-';
+    final nik         = item['nik'] as String? ?? '-';
+    final tanggal     = item['tanggalAnalisis'] as String? ?? '-';
     final rekomendasi = item['hasilRekomendasi'] as String? ?? '-';
-    final cf       = (item['cfGabungan'] as num?)?.toDouble() ?? 0.0;
+    final cf          = (item['cfGabungan'] as num?)?.toDouble() ?? 0.0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -308,10 +222,7 @@ class _RiwayatPageState extends State<RiwayatPage> {
                   const SizedBox(height: 4),
                   Text(
                     'CF: ${(cf * 100).toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: Colors.grey,
-                    ),
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
                   ),
                 ],
               ),
@@ -359,7 +270,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
   }
 
   void _bukaDetail(Map<String, dynamic> item) {
-    // Rekonstruksi WargaModel dari data Firebase
     final warga = WargaModel(
       namaLengkap:             item['namaLengkap'] as String? ?? '-',
       nik:                     item['nik'] as String? ?? '-',
@@ -380,7 +290,6 @@ class _RiwayatPageState extends State<RiwayatPage> {
       adaAnakSekolah:          item['adaAnakSekolah'] as bool? ?? false,
     );
 
-    // Jalankan ulang CF dari data yang ada
     final hasil = CFService.analisis(warga);
 
     Navigator.push(
@@ -407,12 +316,35 @@ class _RiwayatPageState extends State<RiwayatPage> {
         selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 11),
         unselectedLabelStyle: const TextStyle(fontSize: 11),
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Dashboard'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Dashboard'),
           BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Riwayat'),
-          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), label: 'Analisis'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.bar_chart_outlined), activeIcon: Icon(Icons.bar_chart), label: 'Analisis'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profil'),
         ],
-        onTap: (_) {},
+        onTap: (index) {
+          if (index == 1) return;
+          switch (index) {
+            case 0:
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (_) => const DashboardPage()),
+                (route) => false,
+              );
+              break;
+            case 2:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const InputDataWargaPage()),
+              );
+              break;
+            case 3:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const ProfilePage()),
+              );
+              break;
+          }
+        },
       ),
     );
   }
